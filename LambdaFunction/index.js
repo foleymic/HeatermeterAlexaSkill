@@ -174,7 +174,7 @@ function ChangeSetPointTemp(intent, session, callback){
             console.log("Change Setpoint Response: " + response);
             speechOutput = "<p> I have changed the setpoint from <say-as interpret-as=\"cardinal\">" + 
                 oldTemp + "</say-as>  to <say-as interpret-as=\"cardinal\">" + newTemp + "</say-as>degrees </p>";
-            callback({}, buildSpeechletResponse(cardTitle, speechOutput, "", false));
+            callback({}, buildSpeechletResponse(cardTitle, speechOutput, "", true));
         },
         (reason) => console.log("ERROR: " + reason))
         .catch((err) => console.error(err));  
@@ -196,7 +196,7 @@ function getStatusRequest(probe, cardTitle, callback){
         .then( (response) =>  {
             console.log("RESPONSE: " + response );
             speechOutput = buildSpeechOutput(probe, cardTitle, response);
-            callback({}, buildSpeechletResponse(cardTitle, speechOutput, "", false));
+            callback({}, buildSpeechletResponse(cardTitle, speechOutput, "", true));
         },
         (reason) => console.log("ERROR: " + reason))
         .catch( (err) => console.error('Something went wrong', err));

@@ -81,3 +81,12 @@ Before you begin, clone this repo to your local machine:
 7. Click **Next**
 8. Now it's time to test.  In the Utternace textbox, try some of the [sample utterances](./Skill/Utterances.json).  For example *"what is pit's temperature"*, or *"what is probe one temp"*.   **NOTE: when using numbers, be sure to spell them out**.
 
+## TODO ##
+- [ ] Better error and exception handling
+- [ ] "Are you sure" prompt when changing the temperature.
+- [ ] Unit tests - look at [lambda-tester](https://www.linkedin.com/pulse/unit-testing-aws-lambda-functions-nodejs-richard-hyatt)
+- [ ] Use an S3 bucket (or some other mechanism) to save state - I would like to be able to capture cooking time with this skill.
+    - For example: 
+        - "Alexa, tell heatermeter I put the food on the grill (now, or 5 minutes ago)"
+        - "Alexa, ask heatermeter - how long has the food been on the grill"
+
