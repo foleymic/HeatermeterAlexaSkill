@@ -1,0 +1,13 @@
+{
+ "intents": [ 
+    {"intent": "ChangeSetPointIntent","slots": [{"name": "newTemp", "type": "AMAZON.NUMBER" }]},
+    {"intent": "ProbeTempIntent", "slots": [{"name": "probe", "type": "AMAZON.NUMBER" }]},
+    {"intent": "PitProbeTempIntent"}, 
+    {"intent": "AllProbesTempIntent"}, 
+    {"intent": "SetPointTempIntent"},
+    {"intent": "AMAZON.RepeatIntent"},
+    {"intent": "AMAZON.HelpIntent"},
+    {"intent": "AMAZON.StopIntent"},
+    {"intent": "AMAZON.CancelIntent"}
+ ] 
+} 

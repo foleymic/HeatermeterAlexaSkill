@@ -1,0 +1,22 @@
+ProbeTempIntent what is the probe {probe} temperature
+ProbeTempIntent what is the probe {probe} temp
+PitProbeTempIntent what is the pit's temperature
+PitProbeTempIntent what is the pit's current temperature
+PitProbeTempIntent what is the pit's temp
+PitProbeTempIntent what is the barbeque's temp
+PitProbeTempIntent barbeque
+PitProbeTempIntent pit
+PitProbeTempIntent what is the current temperature of the pit
+PitProbeTempIntent what is the current temp of the pit
+AllProbesTempIntent what is the current temperature
+AllProbesTempIntent what is the current temp
+AllProbesTempIntent what is the current status
+AllProbesTempIntent status
+AllProbesTempIntent temperature
+AllProbesTempIntent temp
+SetPointTempIntent set point
+SetPointTempIntent what is my set point
+SetPointTempIntent what is my set point temperature
+SetPointTempIntent what is my set point temp
+ChangeSetPointIntent change setpoint to {newTemp}
+ChangeSetPointIntent change setpoint to {newTemp} degrees
