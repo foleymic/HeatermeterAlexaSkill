@@ -128,9 +128,6 @@ function handleSessionEndRequest(callback) {
     callback({}, buildSpeechletResponse(cardTitle, speechOutput, null, true)); 
 } 
 
-/**s 
-* Sets the color in the session and prepares the speech to reply to the user. 
-*/ 
 function GetProbeTemp(intent, session, callback) { 
     var cardTitle = "ProbeTemp"; 
     var probeSlot = intent.slots.probe; 
@@ -161,12 +158,52 @@ function GetSetPointTemp(intent, session, callback) {
 
 function ChangeSetPointTemp(intent, session, callback){
     var cardTitle = "ChangeSetPointTemp";
-
+    var responseOutput;
+    var speechOutput;
     var newTempSlot = intent.slots.newTemp; 
-
-    if (newTempSlot && newTempSlot.value) { 
+    if (newTempSlot && newTempSlot.value) {
         var newTemp = newTempSlot.value; 
+        var oldTemp;
 
+        getStatusPromise(null)
+        .then ( (response) => {
+            oldTemp=response.set;
+            return changeSetpointPromise(newTemp);
+        })
+        .then( (response) => {
+            console.log("Change Setpoint Response: " + response);
+            speechOutput = "<p> I have changed the setpoint from <say-as interpret-as=\"cardinal\">" + 
+                oldTemp + "</say-as>  to <say-as interpret-as=\"cardinal\">" + newTemp + "</say-as>degrees </p>";
+            callback({}, buildSpeechletResponse(cardTitle, speechOutput, "", false));
+        },
+        (reason) => console.log("ERROR: " + reason))
+        .catch((err) => console.error(err));  
+    }
+    else {
+        console.log ('No new temperature was passed in.');
+    }
+}
+
+function getHelpResponse(callback) { 
+    return 0;
+}
+
+function getStatusRequest(probe, cardTitle, callback){
+    var response;
+    var speechOutput;
+
+    getStatusPromise(probe)
+        .then( (response) =>  {
+            console.log("RESPONSE: " + response );
+            speechOutput = buildSpeechOutput(probe, cardTitle, response);
+            callback({}, buildSpeechletResponse(cardTitle, speechOutput, "", false));
+        },
+        (reason) => console.log("ERROR: " + reason))
+        .catch( (err) => console.error('Something went wrong', err));
+}
+
+function changeSetpointPromise (newTemp) {
+    return new Promise( (resolve, reject) => {
         var form_data = querystring.stringify({ 'value': newTemp});
         var options = {
             host: HeaterMeterHost,
@@ -178,74 +215,87 @@ function ChangeSetPointTemp(intent, session, callback){
             }
         };
 
-        var req = http.request(options, function(res){
+        var req = http.request(options, (res) => {
             var result = '';
             console.log('Status: ' + res.statusCode);
             console.log('Headers: ' + JSON.stringify(res.headers));
             res.setEncoding('utf8');
-            res.on('data', function (chunk) {
-                result += chunk;
-            });
-            res.on('end', function() {
-                console.log("RESULT: " + result);
-                speechOutput = buildSpeechOutput(newTemp, cardTitle, result);
-                callback({}, buildSpeechletResponse(cardTitle, speechOutput, "", true));
-            });
-            res.on('error', function (err) {
-                console.log(err);
+            res.on('data', (chunk) => result += chunk);
+            res.on('end', () => {
+                if (result.includes("sp to " + newTemp + " = OK"))
+                    resolve (result);
+                else
+                    reject ("something went wrong." + result);
             });
         });
-        req.on('error', function(e) {
-            console.log('problem with request: ' + e.message);
-        });
+        req.on('error', (err) => reject (err))
         req.write(form_data);
         req.end();
-    }
-    else{
-        var speechOutput = 'I was unable to process your request. This is a work in progress please try again'; 
-        var repromptText = "I'm not sure what you wanted. . Please ask me to ..."; 
-        callback({}, buildSpeechletResponse(cardTitle, speechOutput, repromptText, false)); 
-    }
+    })
+};
+
+function getStatusPromise(probe) {
+    return new Promise( (resolve, reject) => {
+        var options = {
+                host: HeaterMeterHost,
+                path: '/cgi-bin/luci/lm/api/status',
+                method: 'GET'
+        };
+
+        var req = http.request(options, (res) => {
+            var result = '';
+            console.log('Status: ' + res.statusCode);
+            console.log('Headers: ' + JSON.stringify(res.headers));
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => result += chunk);
+            res.on('end', () => {
+                console.log (result);
+                resolve( JSON.parse('' + result) )
+            });
+            res.on('error',  (err) => reject (err));
+        });
+        req.on('error', (err) => reject (err));
+        req.end();
+    })
 }
 
-function getHelpResponse(callback) { 
-    return 0;
-}
-
-function getStatusRequest(probe, cardTitle, callback){
-     var options = {
-        host: HeaterMeterHost,
-        path: '/cgi-bin/luci/lm/api/status',
-        method: 'GET'
-    };
-
-    var req = http.request(options, function(res){
-        var result = '';
-        var speechOutput = '';
-        var jsonStatus;
-        console.log('Status: ' + res.statusCode);
-        console.log('Headers: ' + JSON.stringify(res.headers));
-        res.setEncoding('utf8');
-        res.on('data', function (chunk) {
-            result += chunk;
+function httpRequest(params, postData) {
+    return new Promise(function(resolve, reject) {
+        var req = http.request(params, function(res) {
+            console.log("test");
+            // reject on bad status
+            if (res.statusCode < 200 || res.statusCode >= 300) {
+                return reject(new Error('statusCode=' + res.statusCode));
+            }
+            // cumulate data
+            var body = [];
+            res.on('data', function(chunk) {
+                console.log("on data");
+                body.push(chunk);
+            });
+            // resolve on end
+            res.on('end', function() {
+                console.log ("on end");
+                try {
+                    body = JSON.parse(Buffer.concat(body).toString());
+                } catch(e) {
+                    reject(e);
+                }
+                console.log("BODY: " + body);
+                resolve(body);
+            });
         });
-        res.on('end', function() {
-            console.log("RESULT: " + result);
-            jsonStatus = JSON.parse('' + result); 
-            speechOutput = buildSpeechOutput(probe, cardTitle, jsonStatus);
-            callback({}, buildSpeechletResponse(cardTitle, speechOutput, "", true));
+        // reject on request error
+        req.on('error', function(err) {
+            // This is not a "Second reject", just a different sort of failure
+            reject(err);
         });
-        res.on('error', function (err) {
-            console.log(err);
-        });
+        if (postData) {
+            req.write(postData);
+        }
+        // IMPORTANT
+        req.end();
     });
-    req.on('error', function(e) {
-        console.log('problem with request: ' + e.message);
-        speechOutput = 'I was unable to find process your request'; 
-        repromptText = 'Please ask me again'; 
-        callback(sessionAttributes, buildSpeechletResponse(cardTitle, speechOutput, repromptText, true)); 
-    });
-    req.end();
 }
 
 
@@ -264,9 +314,6 @@ function pitProbesTempMessage(json){
     return "<p> The pit probe's temperature is " + json.temps[0].c + " degrees </p>";
 }
 
-function changePitSetPointMessage(newTemp, body){
-    return "<p> New setpoint is <say-as interpret-as=\"cardinal\">" + newTemp + "</say-as> degrees </p>";
-}
 
 function buildSpeechOutput(arg, cardTitle, response){
     var speechOut="";
@@ -279,9 +326,6 @@ function buildSpeechOutput(arg, cardTitle, response){
             break;
         case "PitProbeTemp":
             speechOut = pitProbesTempMessage(response) + setpointTempMessage(response);
-            break;
-        case "ChangeSetPointTemp":
-            speechOut = changePitSetPointMessage(arg, response);
             break;
         default:
             speechOut = probesTempMessage(arg, response)
