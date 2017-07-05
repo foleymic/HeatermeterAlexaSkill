@@ -11,7 +11,7 @@ This is a simple Amazon Alexa Skill for integrating with the [Heatermeter](https
             api: 1
         }
         ```
-2. Your Heatermeter needs to be accessable to from the internet.  See [Dynamic DNS (Setting External Host Name)](https://github.com/CapnBry/HeaterMeter/wiki/Dynamic-DNS-(Setting-External-Host-Name)) for more information.  Note that some routers have Dynamic DNS built in, so you can set up DDNS there instead of the Heatermeter if you prefer.  See your router's documentation for more information.
+2. Your Heatermeter needs to be accessible to from the internet.  See [Dynamic DNS (Setting External Host Name)](https://github.com/CapnBry/HeaterMeter/wiki/Dynamic-DNS-(Setting-External-Host-Name)) for more information.  Note that some routers have Dynamic DNS built in, so you can set up DDNS there instead of the Heatermeter if you prefer.  See your router's documentation for more information.
 3. Of course you'll also need an Alexa enabled device (e.g. Amazon Echo, Amazon Tap, etc.)
 4. You'll also need [npm](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0ahUKEwiy0NC-iPDUAhUFySYKHYAlDagQFggoMAA&url=https%3A%2F%2Fwww.npmjs.com%2F&usg=AFQjCNHcRudvKKNX4eMuQBtERCMyaPp85w) on your machine to pull down additional packages needed for the Lambda function. 
 
@@ -22,7 +22,7 @@ This project is invoked by a [custom Alexa skill](https://developer.amazon.com/a
 
 Now assuming you are up to speed on Alexa and Lambda, here are the high level instructions needed to get you up and running with this project.
 
-**Note**: *Even though I am not publishing this project to the Amazaon Skills marketplace, you can still deploy it yourself under your own AWS developer account and use it on your own Alexa enabled devices as long as you use the same account, [check here](https://developer.amazon.com/public/solutions/alexa/alexa-skills-kit/docs/testing-an-alexa-skill).*
+**Note**: *Even though I am not publishing this project to the Amazon Skills marketplace, you can still deploy it yourself under your own AWS developer account and use it on your own Alexa enabled devices as long as you use the same account, [check here](https://developer.amazon.com/public/solutions/alexa/alexa-skills-kit/docs/testing-an-alexa-skill).*
 
 Before you begin, clone this repo to your local machine: 
 
@@ -36,8 +36,7 @@ Before you begin, clone this repo to your local machine:
         `npm install LambdaFunction`
 2. **Zip up the Lambda Function**  - Do not zip the folder LambdaFunction, just the contents of that folder. 
 1. Sign into [aws.amazon.com](aws.amazon.com)
-2. **Note: If you are new to Lambda and would like more information, visit the [Lambda Getting Started Guide](https://docs.aws.amazon.com/lambda/latest/dg/getting-started.html).**
-**IMPORTANT:** For Regions (upper right), select US East (N. Virginia) for US skills and EU (Ireland) for UK/DE skills. These are the only two regions currently supported for Alexa skill development on AWS Lambda, and choosing the right region will guarantee lower latency.
+2. **Note: If you are new to Lambda and would like more information, visit the [Lambda Getting Started Guide](https://docs.aws.amazon.com/lambda/latest/dg/getting-started.html).**  **IMPORTANT:** For Regions (upper right), select US East (N. Virginia) for US skills and EU (Ireland) for UK/DE skills. These are the only two regions currently supported for Alexa skill development on AWS Lambda, and choosing the right region will guarantee lower latency.
 3. Select **Services** in the upper left, then select **Lambda** (under **Compute**) from the navigation menu.
 4. Click the **Create a Lambda function** button.
 5. Click on the **Blank Function** blueprint tile.
@@ -55,13 +54,13 @@ Before you begin, clone this repo to your local machine:
     - Keep Handler as ‘index.handler’
     - Drop down the “Role” menu and select **“Create a new custom role”**. (Note: if you have already used Lambda you may already have a ‘lambda_basic_execution’ role created that you can use.) This will launch a new tab in the IAM Management Console.
 12. Click **Next**, then **Create function**
-13. Now that the function is created, AWS will generate a unuique ARN (Amazon Resource Names) for this function.  This will be displayed on the top right.  We will use this later when configuring the Alexa Skill to identify which Lambda function to call when invoked.
+13. Now that the function is created, AWS will generate a unique ARN (Amazon Resource Names) for this function.  This will be displayed on the top right.  We will use this later when configuring the Alexa Skill to identify which Lambda function to call when invoked.
 
 
 
 #### Setup your Alexa Skill in the [Developer Portal](https://developer.amazon.com/) ####
 1. Open a new Browser window or tab and navigate to the [Developer Portal](https://developer.amazon.com/).
-2. Select Add a New Skill.  Choose `Custom Interaction Model ` as the *Skill Type*, and pick a *Name* and your *Invocation Name* for your skill (*Invokation Name* will the the name you use to invoke the skill.  For example - *"Alexa, ask heatermeter what the current set point is*).  You can leave the **Global Fields** all as `No` 
+2. Select Add a New Skill.  Choose `Custom Interaction Model ` as the *Skill Type*, and pick a *Name* and your *Invocation Name* for your skill (*Invocation Name* will the name you use to invoke the skill.  For example - *"Alexa, ask heatermeter what the current set point is*).  You can leave the **Global Fields** all as `No` 
 
 ![New Skill](./Docs/images/create%20new%20skill.png)
 
@@ -79,7 +78,7 @@ Before you begin, clone this repo to your local machine:
 ![GlobalFields](./Docs/images/Skill-GlobalFields.png)
 
 7. Click **Next**
-8. Now it's time to test.  In the Utternace textbox, try some of the [sample utterances](./Skill/Utterances.json).  For example *"what is pit's temperature"*, or *"what is probe one temp"*.   **NOTE: when using numbers, be sure to spell them out**.
+8. Now it's time to test.  In the Utterance textbox, try some of the [sample utterances](./Skill/Utterances.json).  For example, *"what is pit's temperature"*, or *"what is probe one temp"*.   **NOTE: when using numbers, be sure to spell them out**.
 
 ## TODO ##
 - [ ] Better error and exception handling
