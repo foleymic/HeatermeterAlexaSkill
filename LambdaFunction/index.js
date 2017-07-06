@@ -9,155 +9,89 @@ var APP_ID = undefined; // TODO replace with your app ID (OPTIONAL).
 var HeaterMeterHost=process.env.heatermeterHost;
 var apiKey = process.env.apiKey;
 
-// Route the incoming request based on type (LaunchRequest, IntentRequest, 
-// etc.) The JSON body of the request is provided in the event parameter. 
-exports.handler = function (event, context) { 
-   try { 
-       console.log("event.session.application.applicationId=" + event.session.application.applicationId); 
-       /** 
-        * Uncomment this if statement and populate with your skill's application ID to 
-        * prevent someone else from configuring a skill that sends requests to this function. 
-        */ 
-       /* 
-       if (event.session.application.applicationId !== "amzn1.echo-sdk-ams.app.[unique-value-here]") { 
-            context.fail("Invalid Application ID"); 
-       } 
-       */ 
-       if (event.session.new) { 
-           onSessionStarted({ requestId: event.request.requestId }, event.session); 
-       } 
-       if (event.request.type === "LaunchRequest") { 
-           onLaunch(event.request, 
-               event.session, 
-               function callback(sessionAttributes, speechletResponse) { 
-                   context.succeed(buildResponse(sessionAttributes, speechletResponse)); 
-               }); 
-       } else if (event.request.type === "IntentRequest") { 
-           onIntent(event.request, 
-               event.session, 
-               function callback(sessionAttributes, speechletResponse) { 
-                   context.succeed(buildResponse(sessionAttributes, speechletResponse)); 
-               }); 
-       } else if (event.request.type === "SessionEndedRequest") { 
-           onSessionEnded(event.request, event.session); 
-           context.succeed(); 
-       } 
-   } catch (e) { 
-       context.fail("Exception: " + e); 
-   } 
-}; 
+var newline = "\n";
 
-/** 
-* Called when the session starts. 
-*/ 
-function onSessionStarted(sessionStartedRequest, session) { 
-   console.log("onSessionStarted requestId=" + sessionStartedRequest.requestId + ", sessionId=" + session.sessionId); 
-} 
+var output = "";
 
-/** 
-* Called when the user launches the skill without specifying what they want. 
-*/ 
-function onLaunch(launchRequest, session, callback) { 
-   console.log("onLaunch requestId=" + launchRequest.requestId + ", sessionId=" + session.sessionId); 
-   // Dispatch to your skill's launch. 
-   getWelcomeResponse(callback); 
-} 
+var alexa;
 
-/** 
-* Called when the user specifies an intent for this skill. 
-*/ 
-function onIntent(intentRequest, session, callback) { 
-    console.log("onIntent requestId=" + intentRequest.requestId + ", sessionId=" + session.sessionId); 
-    var intent = intentRequest.intent, 
-    intentName = intentRequest.intent.name; 
+exports.handler = function(event, context, callback) {
+    var alexa = Alexa.handler(event, context);
+    alexa.APP_ID = APP_ID;
+    // To enable string internationalization (i18n) features, set a resources object.
+    alexa.resources = languageStrings;
+    alexa.registerHandlers(handlers);
+    alexa.execute();
+};
 
-    // Dispatch to your skill's intent handlers 
-    switch (intentName){
-        case "WelcomeIntent":
-            getWelcomeResponse(callback); 
-            break;
-        case "ProbeTempIntent":
-            GetProbeTemp(intent, session, callback); 
-            break;
-        case "PitProbeTempIntent":
-            GetPitProbeTemp(intent, session, callback); 
-            break;
-        case "AllProbesTempIntent":
-            GetAllProbeTemp(intent, session, callback); 
-            break;
-        case "SetPointTempIntent":
-            GetSetPointTemp(intent, session, callback); 
-            break;
-        case "ChangeSetPointIntent":
-            ChangeSetPointTemp(intent, session, callback); 
-            break;
-        case "AMAZON.HelpIntent":
-            getHelpResponse(callback); 
-            break;
-        case "AMAZON.StopInten" || "AMAZON.CancelIntent":
-            handleSessionEndRequest(callback);
-            break;                    
-        default:
-            throw "Invalid intent";
+var handlers = {
+    'LaunchRequest': function () {
+        this.attributes['speechOutput'] = this.t("WELCOME_MESSAGE", this.t("SKILL_NAME"));
+        // If the user either does not reply to the welcome message or says something that is not
+        // understood, they will be prompted again with this text.
+        this.attributes['repromptSpeech'] = this.t("WELCOME_REPROMPT");
+        this.emit(':ask', this.attributes['speechOutput'], this.attributes['repromptSpeech'])
+    },
+    'ProbeTempIntent': function() {
+        var cardTitle = "PitProbeTemp"; 
+        getStatusRequest(0, cardTitle, this);  
+    },
+    'PitProbeTempIntent': function() {
+        GetPitProbeTemp(this);
+    },
+    'AllProbesTempIntent': function() {
+        var cardTitle = "AllProbesTemp"; 
+        getStatusRequest(null, cardTitle, this);
+    },
+    'SetPointTempIntent': function() {
+        var cardTitle = "SetPointTemp";
+        getStatusRequest(null, cardTitle, this);
+    },
+    'ChangeSetPointIntent': function() {
+        ChangeSetPointTemp(this); 
+    },
+    'AMAZON.HelpIntent': function () {
+        this.attributes['speechOutput'] = this.t("HELP_MESSAGE");
+        this.attributes['repromptSpeech'] = this.t("HELP_REPROMPT");
+        this.emit(':ask', this.attributes['speechOutput'], this.attributes['repromptSpeech'])
+    },
+    'AMAZON.RepeatIntent': function () {
+        this.emit(':ask', this.attributes['speechOutput'], this.attributes['repromptSpeech'])
+    },
+    'AMAZON.StopIntent': function () {
+        this.emit('SessionEndedRequest');
+    },
+    'AMAZON.CancelIntent': function () {
+        this.emit('SessionEndedRequest');
+    },
+    'SessionEndedRequest':function () {
+        this.emit(':tell', this.t("STOP_MESSAGE"));
+    },
+    'Unhandled': function () {
+        this.attributes['speechOutput'] = this.t("HELP_MESSAGE");
+        this.attributes['repromptSpeech'] = this.t("HELP_REPROMPT");
+        this.emit(':ask', this.attributes['speechOutput'], this.attributes['repromptSpeech'])
     }
-} 
+};
 
-/** 
-* Called when the user ends the session. 
-* Is not called when the skill returns shouldEndSession=true. 
-*/ 
-function onSessionEnded(sessionEndedRequest, session) { 
-    console.log("onSessionEnded requestId=" + sessionEndedRequest.requestId + ", sessionId=" + session.sessionId); 
-    // Add cleanup logic here 
-} 
 
-// --------------- Functions that control the skill's behavior ----------------------- 
-function getWelcomeResponse(callback) { 
-    // If we wanted to initialize the session to have some attributes we could add those here. 
-    var sessionAttributes = {}; 
-    var cardTitle = "HeaterMeter"; 
-    var speechOutput = "<p>Welcome to the Heatermeter Alexa skill </p> <p>Please ask me to give you the current status</p>"; 
-    var repromptText = "Please ask me to give you the barbeque temp"; 
-    var shouldEndSession = false; 
-    callback(sessionAttributes, buildSpeechletResponse(cardTitle, speechOutput, repromptText, true)); 
-} 
-
-function handleSessionEndRequest(callback) { 
-    var cardTitle = "Session Ended"; 
-    var speechOutput = "Thank you for using the Heatermeter skill."; 
-    callback({}, buildSpeechletResponse(cardTitle, speechOutput, null, true)); 
-} 
-
-function GetProbeTemp(intent, session, callback) { 
+function GetProbeTemp(handler) { 
     var cardTitle = "ProbeTemp"; 
+    var intent = handler.event.request.intent;
     var probeSlot = intent.slots.probe; 
 
     if (probeSlot && probeSlot.value) { 
         var probe = probeSlot.value; 
-        getStatusRequest(probe, cardTitle, callback); 
+        getStatusRequest(probe, cardTitle); 
     } else { 
         var speechOutput = 'I was unable to process your request. This is a work in progress please try again'; 
-        callback({}, buildSpeechletResponse(cardTitle, speechOutput, "", false)); 
+        handler.emit(':tellWithCard', speechOutput, cardTitle, output);
     } 
 } 
 
-function GetPitProbeTemp(intent, session, callback) { 
-    var cardTitle = "PitProbeTemp"; 
-    getStatusRequest(0, cardTitle, callback);  
-} 
-
-function GetAllProbeTemp(intent, session, callback) { 
-    var cardTitle = "AllProbesTemp"; 
-    getStatusRequest(null, cardTitle, callback);
-} 
-
-function GetSetPointTemp(intent, session, callback) { 
-    var cardTitle = "SetPointTemp";
-    getStatusRequest(null, cardTitle, callback);
-} 
-
-function ChangeSetPointTemp(intent, session, callback){
+function ChangeSetPointTemp(handler){
     var cardTitle = "ChangeSetPointTemp";
+    var intent = handler.event.request.intent
     var responseOutput;
     var speechOutput;
     var newTempSlot = intent.slots.newTemp; 
@@ -172,9 +106,9 @@ function ChangeSetPointTemp(intent, session, callback){
         })
         .then( (response) => {
             console.log("Change Setpoint Response: " + response);
-            speechOutput = "<p> I have changed the setpoint from <say-as interpret-as=\"cardinal\">" + 
-                oldTemp + "</say-as>  to <say-as interpret-as=\"cardinal\">" + newTemp + "</say-as>degrees </p>";
-            callback({}, buildSpeechletResponse(cardTitle, speechOutput, "", true));
+            speechOutput = "I have changed the setpoint from <say-as interpret-as=\"cardinal\">" + 
+                oldTemp + "</say-as>  to <say-as interpret-as=\"cardinal\">" + newTemp + "</say-as>degrees";
+            handler.emit(':tellWithCard', speechOutput, cardTitle, speechOutput, null );
         },
         (reason) => console.log("ERROR: " + reason))
         .catch((err) => console.error(err));  
@@ -182,24 +116,6 @@ function ChangeSetPointTemp(intent, session, callback){
     else {
         console.log ('No new temperature was passed in.');
     }
-}
-
-function getHelpResponse(callback) { 
-    return 0;
-}
-
-function getStatusRequest(probe, cardTitle, callback){
-    var response;
-    var speechOutput;
-
-    getStatusPromise(probe)
-        .then( (response) =>  {
-            console.log("RESPONSE: " + response );
-            speechOutput = buildSpeechOutput(probe, cardTitle, response);
-            callback({}, buildSpeechletResponse(cardTitle, speechOutput, "", true));
-        },
-        (reason) => console.log("ERROR: " + reason))
-        .catch( (err) => console.error('Something went wrong', err));
 }
 
 function changeSetpointPromise (newTemp) {
@@ -234,6 +150,23 @@ function changeSetpointPromise (newTemp) {
     })
 };
 
+
+
+
+function getStatusRequest(probe, cardTitle, handler){
+    var response;
+    var speechOutput;
+
+    getStatusPromise(probe)
+        .then( (response) =>  {
+            console.log("RESPONSE: " + response );
+            speechOutput = buildSpeechOutput(probe, cardTitle, response);
+            handler.emit(':tellWithCard', speechOutput, cardTitle, speechOutput, null );
+        },
+        (reason) => console.log("ERROR: " + reason))
+        .catch( (err) => console.error('Something went wrong', err));
+}
+
 function getStatusPromise(probe) {
     return new Promise( (resolve, reject) => {
         var options = {
@@ -259,47 +192,7 @@ function getStatusPromise(probe) {
     })
 }
 
-function httpRequest(params, postData) {
-    return new Promise(function(resolve, reject) {
-        var req = http.request(params, function(res) {
-            console.log("test");
-            // reject on bad status
-            if (res.statusCode < 200 || res.statusCode >= 300) {
-                return reject(new Error('statusCode=' + res.statusCode));
-            }
-            // cumulate data
-            var body = [];
-            res.on('data', function(chunk) {
-                console.log("on data");
-                body.push(chunk);
-            });
-            // resolve on end
-            res.on('end', function() {
-                console.log ("on end");
-                try {
-                    body = JSON.parse(Buffer.concat(body).toString());
-                } catch(e) {
-                    reject(e);
-                }
-                console.log("BODY: " + body);
-                resolve(body);
-            });
-        });
-        // reject on request error
-        req.on('error', function(err) {
-            // This is not a "Second reject", just a different sort of failure
-            reject(err);
-        });
-        if (postData) {
-            req.write(postData);
-        }
-        // IMPORTANT
-        req.end();
-    });
-}
 
-
-// --------------- Helpers that build all of the responses ----------------------- 
 function setpointTempMessage(json){
     return "<p> Currently set for " + json.set + " degrees </p>";
 }
@@ -335,7 +228,7 @@ function buildSpeechOutput(arg, cardTitle, response){
     return speechOut;
 }
 
-function buildSpeechletResponse(title, output, repromptText, shouldEndSession) { 
+function buildSpeechResponse(title, output, repromptText, shouldEndSession) { 
    return { 
        outputSpeech: { 
            type: "SSML", 
@@ -356,10 +249,22 @@ function buildSpeechletResponse(title, output, repromptText, shouldEndSession) {
    }; 
 } 
 
-function buildResponse(sessionAttributes, speechletResponse) { 
-   return { 
-       version: "1.0", 
-       sessionAttributes: sessionAttributes, 
-       response: speechletResponse 
-   }; 
-} 
+
+var languageStrings = {
+    "en": {
+        "translation": {
+            "SKILL_NAME": "Heater Meter",
+            "WELCOME_MESSAGE": "Welcome to %s. You can ask a question like, what temperature is the pit, or change set point to 200 degrees? ... Now, what can I help you with.",
+            "WELCOME_REPROMPT": "For instructions on what you can say, please say help me.",
+            "DISPLAY_CARD_TITLE": "%s  - Recipe for %s.",
+            "HELP_MESSAGE": "You can ask questions such as, what\'s temperature is the pit, or change set point to 200 degrees, or, you can say exit...Now, what can I help you with?",
+            "HELP_REPROMPT": "You can say things like, what\'s the current status, or what is probe 1\'s temperature, or you can say exit...Now, what can I help you with?",
+            "STOP_MESSAGE": "Goodbye!",
+            "REPEAT_MESSAGE": "Try saying repeat.",
+            "NOT_FOUND_MESSAGE": "I\'m sorry, I currently do not know ",
+            "REPROMPT": "What else can I help with?",
+            "LET_ME_CHECK": "Let me check."
+        }
+    }
+}
+
