@@ -7,6 +7,7 @@ var querystring = require('querystring');
 var APP_ID = undefined; // TODO replace with your app ID (OPTIONAL).
 
 var HeaterMeterHost=process.env.heatermeterHost;
+var HeaterMeterPort=process.env.heatermeterPort;
 var apiKey = process.env.apiKey;
 
 var newline = "\n";
@@ -33,11 +34,12 @@ var handlers = {
         this.emit(':ask', this.attributes['speechOutput'], this.attributes['repromptSpeech'])
     },
     'ProbeTempIntent': function() {
-        var cardTitle = "PitProbeTemp"; 
-        getStatusRequest(0, cardTitle, this);  
+        var cardTitle = "ProbeTemp"; 
+        GetPitProbeTemp(this);
     },
     'PitProbeTempIntent': function() {
-        GetPitProbeTemp(this);
+        var cardTitle = "PitProbeTemp"; 
+        getStatusRequest(0, cardTitle, this);  
     },
     'AllProbesTempIntent': function() {
         var cardTitle = "AllProbesTemp"; 
@@ -123,6 +125,7 @@ function changeSetpointPromise (newTemp) {
         var form_data = querystring.stringify({ 'value': newTemp});
         var options = {
             host: HeaterMeterHost,
+            port: HeaterMeterPort || 80,
             path: '/cgi-bin/luci/lm/api/config/sp?apikey=' + apiKey,
             method: 'POST',
             headers: {
@@ -171,6 +174,7 @@ function getStatusPromise(probe) {
     return new Promise( (resolve, reject) => {
         var options = {
                 host: HeaterMeterHost,
+                port: HeaterMeterPort || 80,
                 path: '/cgi-bin/luci/lm/api/status',
                 method: 'GET'
         };
