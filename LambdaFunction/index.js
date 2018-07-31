@@ -16,6 +16,10 @@ var output = "";
 
 var alexa;
 
+function GetHeaterMeterPort() {
+    return HeaterMeterPort || 80;
+}
+
 exports.handler = function(event, context, callback) {
     var alexa = Alexa.handler(event, context);
     alexa.APP_ID = APP_ID;
@@ -125,7 +129,7 @@ function changeSetpointPromise (newTemp) {
         var form_data = querystring.stringify({ 'value': newTemp});
         var options = {
             host: HeaterMeterHost,
-            port: HeaterMeterPort || 80,
+            port: GetHeaterMeterPort(),
             path: '/cgi-bin/luci/lm/api/config/sp?apikey=' + apiKey,
             method: 'POST',
             headers: {
@@ -174,7 +178,7 @@ function getStatusPromise(probe) {
     return new Promise( (resolve, reject) => {
         var options = {
                 host: HeaterMeterHost,
-                port: HeaterMeterPort || 80,
+                port: GetHeaterMeterPort(),
                 path: '/cgi-bin/luci/lm/api/status',
                 method: 'GET'
         };
